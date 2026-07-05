@@ -52,7 +52,16 @@ export type CheckOptions = {
    * ISO 3166-1 country code (iOS only)
    */
   country?: string;
+
+  /**
+   * Which strategy to use for checking/prompting for updates on iOS.
+   * 'itunes' (default) uses the iTunes Search API directly, no extra native dependency required.
+   * 'siren' delegates to react-native-siren, which must be installed separately. (iOS only)
+   */
+  iosStrategy?: IosStrategy;
 };
+
+export type IosStrategy = 'itunes' | 'siren';
 
 export type SemverVersion = string;
 export type SemverVersionCode = number;
@@ -171,6 +180,7 @@ type IosStartUpdateOption = {
   bundleId?: string;
   country?: string;
   reverseButtons?: boolean;
+  iosStrategy?: IosStrategy;
 };
 
 type IosStartUpdateOptionWithLocalVersion = IosStartUpdateOption & {
