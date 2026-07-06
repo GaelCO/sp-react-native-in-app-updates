@@ -94,8 +94,8 @@ export type AndroidInAppUpdateExtras = {
   versionCode: SemverVersionCode;
   isFlexibleUpdateAllowed: boolean;
   isImmediateUpdateAllowed: boolean;
-  packageName: string;
-  totalBytes: number;
+  packageName?: string;
+  totalBytes?: number;
   updatePriority: number;
 };
 
