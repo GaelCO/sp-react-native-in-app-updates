@@ -1,3 +1,23 @@
+# 1.\*.\* -> 2.0.*
+
+### New Architecture (TurboModules) support on Android
+
+The Android native module now extends the codegen-generated TurboModule spec
+instead of `ReactContextBaseJavaModule` directly. This is backward
+compatible: the same module works unchanged on apps still using the old
+bridge architecture, no app-side changes are required.
+
+### iOS defaults to the iTunes Search API instead of `react-native-siren`
+
+`checkNeedsUpdate`/`startUpdate` on iOS no longer require `react-native-siren`
+by default — they call the iTunes Search API directly, with no extra native
+dependency. `react-native-siren` is now an optional peer dependency, still
+available via `iosStrategy: 'siren'` on `CheckOptions`/`StartUpdateOptions`
+for anyone who prefers it (install it separately if you use that option).
+
+No public API changes otherwise — `new SpInAppUpdates(isDebug)` and its
+method signatures are unchanged.
+
 # 1.2.* -> 1.3.*
 
 ### Android: Changing how we import core play dependencies.

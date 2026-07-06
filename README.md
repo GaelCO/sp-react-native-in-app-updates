@@ -12,6 +12,8 @@ This is a **react-native native module** that works on both **iOS** and **Androi
 
 It uses **embedded** [in-app-updates via Play-Core](https://developer.android.com/guide/playcore/in-app-updates) on Android (to check & download google play patches natively from within the app), and the iTunes Search API on iOS by default (to check & navigate the user to the AppStore, with no extra native dependency). [react-native-siren](https://github.com/GantMan/react-native-siren) is still available on iOS as an opt-in via `iosStrategy: 'siren'` (see below) for anyone who prefers it — install it separately if you use that option.
 
+The Android module supports both the old bridge architecture and the **New Architecture** (TurboModules) — no extra setup needed either way.
+
 ### Why?
 Because to this day I'm not aware of any react-native libraries that use play core to offer embedded in-app-updates besides this one
 
