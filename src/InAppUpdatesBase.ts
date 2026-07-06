@@ -16,7 +16,7 @@ export default class InAppUpdatesBase {
     this.isDebug = isDebug || false;
   }
 
-  public throwError = (err: string | Error, scope: string) => {
+  public throwError = (err: string | Error, scope: string): never => {
     throw new Error(`${this.name} ${`${scope} ` || ''}error: ${err}`);
   };
 

@@ -1,17 +1,35 @@
-// @ts-expect-error
-import Siren from 'react-native-siren';
+import { Alert, Linking } from 'react-native';
+import { getBundleId, getVersion } from 'react-native-device-info';
 
 import { compareVersions } from './utils';
 import InAppUpdatesBase from './InAppUpdatesBase';
+import { fetchItunesLookup } from './itunesLookup';
 import type {
   CheckOptions,
   IosPerformCheckResponse,
   IosStartUpdateOptions,
   IosNeedsUpdateResponse,
 } from './types';
-import { getVersion } from 'react-native-device-info';
 
 const noop = () => {};
+
+const DEFAULT_TITLE = 'Update Available';
+const DEFAULT_MESSAGE =
+  'There is an updated version available on the App Store. Would you like to upgrade?';
+const DEFAULT_BUTTON_UPGRADE_TEXT = 'Upgrade';
+const DEFAULT_BUTTON_CANCEL_TEXT = 'Cancel';
+
+// react-native-siren is an optional peer dependency, only required when iosStrategy is 'siren'
+const requireSiren = () => {
+  try {
+    return require('react-native-siren').default;
+  } catch (e) {
+    throw new Error(
+      "iosStrategy 'siren' requires the react-native-siren package, which isn't installed. " +
+        'Install it with `npm install react-native-siren` (or remove `iosStrategy: "siren"` to use the default iTunes Search API strategy).'
+    );
+  }
+};
 
 export default class InAppUpdates extends InAppUpdatesBase {
   public checkNeedsUpdate(
@@ -23,6 +41,7 @@ export default class InAppUpdates extends InAppUpdatesBase {
       toSemverConverter,
       customVersionComparator,
       country,
+      iosStrategy = 'itunes',
     } = checkOptions || {};
 
     let appVersion: string;
@@ -32,7 +51,13 @@ export default class InAppUpdates extends InAppUpdatesBase {
       appVersion = getVersion();
     }
     this.debugLog('Checking store version (iOS)');
-    return Siren.performCheck({ bundleId, country })
+
+    const performCheck: Promise<IosPerformCheckResponse> =
+      iosStrategy === 'siren'
+        ? requireSiren().performCheck({ bundleId, country })
+        : this.performItunesCheck(bundleId, country, appVersion);
+
+    return performCheck
       .then((checkResponse: IosPerformCheckResponse) => {
         this.debugLog(
           `Received response from app store: ${JSON.stringify(checkResponse)}`
@@ -89,19 +114,85 @@ export default class InAppUpdates extends InAppUpdatesBase {
       })
       .catch((err: any) => {
         this.debugLog(err);
-        this.throwError(err, 'checkNeedsUpdate');
+        return this.throwError(err, 'checkNeedsUpdate');
       });
   }
 
+  private async performItunesCheck(
+    bundleId: string | undefined,
+    country: string | undefined,
+    appVersion: string
+  ): Promise<IosPerformCheckResponse> {
+    const resolvedBundleId = bundleId || getBundleId();
+    const entry = await fetchItunesLookup(resolvedBundleId, country);
+    if (!entry) {
+      return { updateIsAvailable: false } as IosPerformCheckResponse;
+    }
+    return {
+      ...entry,
+      updateIsAvailable: compareVersions(entry.version, appVersion) > 0,
+    };
+  }
+
   startUpdate(updateOptions: IosStartUpdateOptions): Promise<void> {
-    return Promise.resolve(
-      Siren.promptUser(
-        updateOptions,
-        updateOptions?.versionSpecificOptions,
-        updateOptions?.bundleId,
-        updateOptions?.country
-      )
+    const { iosStrategy = 'itunes' } = updateOptions || {};
+    if (iosStrategy === 'siren') {
+      return Promise.resolve(
+        requireSiren().promptUser(
+          updateOptions,
+          updateOptions?.versionSpecificOptions,
+          updateOptions?.bundleId,
+          updateOptions?.country
+        )
+      );
+    }
+    return this.promptUserForUpdate(updateOptions);
+  }
+
+  private async promptUserForUpdate(
+    updateOptions: IosStartUpdateOptions
+  ): Promise<void> {
+    const { bundleId, country, versionSpecificOptions } = updateOptions || {};
+    const resolvedBundleId = bundleId || getBundleId();
+    const [entry, appVersion] = await Promise.all([
+      fetchItunesLookup(resolvedBundleId, country),
+      Promise.resolve(getVersion()),
+    ]);
+
+    const versionOverride = versionSpecificOptions?.find(
+      (option) => option.localVersion === appVersion
     );
+    const {
+      title = DEFAULT_TITLE,
+      message = DEFAULT_MESSAGE,
+      buttonUpgradeText = DEFAULT_BUTTON_UPGRADE_TEXT,
+      buttonCancelText = DEFAULT_BUTTON_CANCEL_TEXT,
+      forceUpgrade = false,
+      reverseButtons = false,
+    } = versionOverride || updateOptions;
+
+    return new Promise<void>((resolve) => {
+      const openStore = () => {
+        if (entry?.trackViewUrl) {
+          Linking.openURL(entry.trackViewUrl.split('?')[0]);
+        }
+        resolve();
+      };
+      const cancel = {
+        text: buttonCancelText,
+        style: 'cancel' as const,
+        onPress: () => resolve(),
+      };
+      const upgrade = { text: buttonUpgradeText, onPress: openStore };
+      const buttons = forceUpgrade
+        ? [upgrade]
+        : reverseButtons
+        ? [upgrade, cancel]
+        : [cancel, upgrade];
+
+      this.debugLog(`Prompting user to update (title: ${title})`);
+      Alert.alert(title, message, buttons);
+    });
   }
 
   installUpdate = noop;
