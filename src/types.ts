@@ -68,8 +68,8 @@ export type SemverVersionCode = number;
 
 export interface NeedsUpdateResponseBase {
   shouldUpdate: boolean;
-  storeVersion: SemverVersion;
-  reason: string;
+  storeVersion?: SemverVersion;
+  reason?: string;
 }
 
 export enum AndroidOther {
