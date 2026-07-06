@@ -4,7 +4,6 @@ import androidx.annotation.NonNull;
 
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.module.annotations.ReactModule;
 import android.app.Activity;
@@ -33,8 +32,11 @@ import java.util.HashMap;
 import java.util.Map;
 import static android.app.Activity.RESULT_OK;
 
+// Extends the codegen-generated NativeSpInAppUpdatesSpec (itself a
+// ReactContextBaseJavaModule implementing TurboModule), so this same class
+// is used unchanged under both the old bridge and the New Architecture.
 @ReactModule(name = SpReactNativeInAppUpdatesModule.NAME)
-public class SpReactNativeInAppUpdatesModule extends ReactContextBaseJavaModule implements InstallStateUpdatedListener, ActivityEventListener {
+public class SpReactNativeInAppUpdatesModule extends NativeSpInAppUpdatesSpec implements InstallStateUpdatedListener, ActivityEventListener {
     public static final String NAME = "SpInAppUpdates";
     public static int IN_APP_UPDATE_REQUEST_CODE = 42139;
     public static String IN_APP_UPDATE_RESULT_KEY = "in_app_update_result";
@@ -82,11 +84,13 @@ public class SpReactNativeInAppUpdatesModule extends ReactContextBaseJavaModule 
         return constants;
     }
 
+    @Override
     @ReactMethod
-    public void setStatusUpdateSubscription(Boolean active) {
+    public void setStatusUpdateSubscription(boolean active) {
         subscribedToUpdateStatuses = active;
     }
 
+    @Override
     @ReactMethod
     public void checkNeedsUpdate(Promise resolutionPromise) {
         // Returns an intent object that you use to check for an update.
@@ -122,8 +126,10 @@ public class SpReactNativeInAppUpdatesModule extends ReactContextBaseJavaModule 
         });
     }
 
+    @Override
     @ReactMethod
-    public void startUpdate(int updateType, Promise resolutionPromise) {
+    public void startUpdate(double updateType, Promise resolutionPromise) {
+        int resolvedUpdateType = (int) updateType;
         // Returns an intent object that you use to check for an update.
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
 
@@ -135,7 +141,7 @@ public class SpReactNativeInAppUpdatesModule extends ReactContextBaseJavaModule 
         appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
             if (appUpdateInfo.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE) {
                 resolutionPromise.reject("Error", "Update unavailable, check checkNeedsUpdate.updateAvailability first");
-            } else if (!appUpdateInfo.isUpdateTypeAllowed(updateType)) {
+            } else if (!appUpdateInfo.isUpdateTypeAllowed(resolvedUpdateType)) {
                 resolutionPromise.reject("Error", "Update type unavailable, check checkNeedsUpdate.isImmediateUpdateAllowed or checkNeedsUpdate.isFlexibleUpdateAllowed first.");
             } else {
                 try {
@@ -143,7 +149,7 @@ public class SpReactNativeInAppUpdatesModule extends ReactContextBaseJavaModule 
                         // Pass the intent that is returned by 'getAppUpdateInfo()'.
                         appUpdateInfo,
                         // 'AppUpdateType.IMMEDIATE' Or 'AppUpdateType.FLEXIBLE'
-                        updateType,
+                        resolvedUpdateType,
                         // The current activity making the update request.
                         getCurrentActivity(),
                         // Include a request code to later monitor this update request.
@@ -157,16 +163,19 @@ public class SpReactNativeInAppUpdatesModule extends ReactContextBaseJavaModule 
         });
     }
 
+    @Override
     @ReactMethod
     public void installUpdate() {
         appUpdateManager.completeUpdate();
     }
 
+    @Override
     @ReactMethod
     public void addListener(String eventName) {
         // Keep: Required for RN built in Event Emitter Calls.
     }
 
+    @Override
     @ReactMethod
     public void removeListeners(double count) {
         // Keep: Required for RN built in Event Emitter Calls.
