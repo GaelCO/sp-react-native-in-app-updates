@@ -14,10 +14,10 @@ export const fetchItunesLookup = async (
   const params = new URLSearchParams();
   if (bundleId) params.set('bundleId', bundleId);
   if (country) params.set('country', country);
-  // busts aggressive CDN/proxy caching of the lookup response
-  params.set('_', `${Date.now()}`);
 
-  const response = await fetch(`${ITUNES_LOOKUP_URL}?${params.toString()}`);
+  const response = await fetch(`${ITUNES_LOOKUP_URL}?${params.toString()}`, {
+    headers: { 'Cache-Control': 'no-cache' },
+  });
 
   if (!response.ok) {
     throw new Error(`iTunes lookup failed with status ${response.status}`);
