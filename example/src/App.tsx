@@ -5,6 +5,7 @@ import SpInAppUpdates, {
   IAUUpdateKind,
   StartUpdateOptions,
   StatusUpdateEvent,
+  IosStrategy,
 } from 'sp-react-native-in-app-updates';
 
 import {
@@ -24,14 +25,16 @@ type AppState = {
   needsUpdate: boolean | null;
   otherData?: NeedsUpdateResponse | null;
   error: string | null;
+  iosStrategy: IosStrategy;
 };
 export default class App extends React.Component<{}, AppState> {
   private inAppUpdates: SpInAppUpdates;
 
-  state = {
+  state: AppState = {
     needsUpdate: null,
     otherData: null,
     error: null,
+    iosStrategy: 'itunes',
   };
 
   constructor(props: any) {
@@ -41,10 +44,19 @@ export default class App extends React.Component<{}, AppState> {
     );
   }
 
+  toggleIosStrategy = () => {
+    this.setState((prevState) => ({
+      iosStrategy: prevState.iosStrategy === 'itunes' ? 'siren' : 'itunes',
+    }));
+  };
+
   checkForUpdates = () => {
     this.inAppUpdates
       .checkNeedsUpdate({
         curVersion: '0.0.8',
+        ...(Platform.OS === 'ios'
+          ? { iosStrategy: this.state.iosStrategy }
+          : null),
         // toSemverConverter: (ver: SemverVersion) => {
         //   // i.e if 400401 is the Android version, and we want to convert it to 4.4.1
         //   const androidVersionNo = parseInt(ver, 10);
@@ -71,6 +83,9 @@ export default class App extends React.Component<{}, AppState> {
   startUpdating = () => {
     if (this.state.needsUpdate) {
       let updateOptions: StartUpdateOptions = {};
+      if (Platform.OS === 'ios') {
+        updateOptions = { iosStrategy: this.state.iosStrategy };
+      }
       if (Platform.OS === 'android' && this.state.otherData) {
         const { otherData } = this.state || {
           otherData: null,
@@ -105,7 +120,7 @@ export default class App extends React.Component<{}, AppState> {
   };
 
   render() {
-    const { needsUpdate, error } = this.state;
+    const { needsUpdate, error, iosStrategy } = this.state;
     let statusTxt;
     if (needsUpdate) {
       statusTxt = 'YES';
@@ -121,6 +136,15 @@ export default class App extends React.Component<{}, AppState> {
         <StatusBar barStyle="dark-content" />
         <SafeAreaView>
           <View style={styles.container}>
+            {Platform.OS === 'ios' ? (
+              <View style={styles.aButton}>
+                <Button
+                  title={`iOS strategy: ${iosStrategy} (tap to switch)`}
+                  color={BUTTON_COLOR}
+                  onPress={this.toggleIosStrategy}
+                />
+              </View>
+            ) : null}
             <View style={styles.aButton}>
               <Button
                 title="Check for updates"
