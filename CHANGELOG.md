@@ -15,8 +15,15 @@ dependency. `react-native-siren` is now an optional peer dependency, still
 available via `iosStrategy: 'siren'` on `CheckOptions`/`StartUpdateOptions`
 for anyone who prefers it (install it separately if you use that option).
 
-No public API changes otherwise — `new SpInAppUpdates(isDebug)` and its
-method signatures are unchanged.
+`new SpInAppUpdates(isDebug)` and its method signatures are unchanged.
+
+### BREAKING (types only): `storeVersion`/`reason` are now optional on `NeedsUpdateResponseBase`
+
+Both platforms already omitted these fields from `checkNeedsUpdate`'s result in
+some success/failure branches; the types just didn't reflect that before. If
+you're on strict TypeScript and read `result.storeVersion`/`result.reason`
+without a null check (e.g. `semver.gt(result.storeVersion, ...)`), you'll need
+to add one when upgrading.
 
 # 1.2.* -> 1.3.*
 
