@@ -11,9 +11,12 @@ export const fetchItunesLookup = async (
   bundleId?: string,
   country?: string
 ): Promise<IosITunesResponse | undefined> => {
+  // React Native's built-in URLSearchParams polyfill only implements
+  // append()/toString() on RN <= 0.79 - set() throws. append() is equivalent
+  // here since each key is added once on a fresh instance.
   const params = new URLSearchParams();
-  if (bundleId) params.set('bundleId', bundleId);
-  if (country) params.set('country', country);
+  if (bundleId) params.append('bundleId', bundleId);
+  if (country) params.append('country', country);
 
   const response = await fetch(`${ITUNES_LOOKUP_URL}?${params.toString()}`, {
     headers: { 'Cache-Control': 'no-cache' },
