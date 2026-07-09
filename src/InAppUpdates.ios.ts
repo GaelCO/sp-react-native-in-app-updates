@@ -154,10 +154,26 @@ export default class InAppUpdates extends InAppUpdatesBase {
   ): Promise<void> {
     const { bundleId, country, versionSpecificOptions } = updateOptions || {};
     const resolvedBundleId = bundleId || getBundleId();
-    const [entry, appVersion] = await Promise.all([
-      fetchItunesLookup(resolvedBundleId, country),
-      Promise.resolve(getVersion()),
-    ]);
+    const appVersion = getVersion();
+    const checkResponse = await this.performItunesCheck(
+      resolvedBundleId,
+      country,
+      appVersion
+    );
+
+    if (!checkResponse.trackViewUrl) {
+      return this.throwError(
+        `Couldn't find an App Store entry for bundleId "${resolvedBundleId}"`,
+        'startUpdate'
+      );
+    }
+
+    if (!checkResponse.updateIsAvailable) {
+      this.debugLog(
+        `Current version (${appVersion}) is already up to date with the store version (${checkResponse.version}); skipping prompt`
+      );
+      return;
+    }
 
     const versionOverride = versionSpecificOptions?.find(
       (option) => option.localVersion === appVersion
@@ -173,9 +189,7 @@ export default class InAppUpdates extends InAppUpdatesBase {
 
     return new Promise<void>((resolve) => {
       const openStore = () => {
-        if (entry?.trackViewUrl) {
-          Linking.openURL(entry.trackViewUrl.split('?')[0]);
-        }
+        Linking.openURL(checkResponse.trackViewUrl.split('?')[0]);
         resolve();
       };
       const cancel = {
