@@ -55,7 +55,7 @@ export default class InAppUpdates extends InAppUpdatesBase {
     const performCheck: Promise<IosPerformCheckResponse> =
       iosStrategy === 'siren'
         ? requireSiren().performCheck({ bundleId, country })
-        : this.performItunesCheck(bundleId, country, appVersion);
+        : this.performItunesCheck(bundleId, country);
 
     return performCheck
       .then((checkResponse: IosPerformCheckResponse) => {
@@ -120,18 +120,19 @@ export default class InAppUpdates extends InAppUpdatesBase {
 
   private async performItunesCheck(
     bundleId: string | undefined,
-    country: string | undefined,
-    appVersion: string
+    country: string | undefined
   ): Promise<IosPerformCheckResponse> {
     const resolvedBundleId = bundleId || getBundleId();
     const entry = await fetchItunesLookup(resolvedBundleId, country);
     if (!entry) {
       return { updateIsAvailable: false } as IosPerformCheckResponse;
     }
-    return {
-      ...entry,
-      updateIsAvailable: compareVersions(entry.version, appVersion) > 0,
-    };
+    // updateIsAvailable is a shape-parity placeholder here (matches the siren
+    // response shape); it isn't a real comparison. checkNeedsUpdate derives
+    // shouldUpdate itself from `version`, after applying its own semver
+    // conversion/comparator, and promptUserForUpdate does its own comparison
+    // below - neither should rely on a comparison done before that.
+    return { ...entry, updateIsAvailable: false };
   }
 
   startUpdate(updateOptions: IosStartUpdateOptions): Promise<void> {
@@ -157,8 +158,7 @@ export default class InAppUpdates extends InAppUpdatesBase {
     const appVersion = getVersion();
     const checkResponse = await this.performItunesCheck(
       resolvedBundleId,
-      country,
-      appVersion
+      country
     );
 
     if (!checkResponse.trackViewUrl) {
@@ -168,7 +168,19 @@ export default class InAppUpdates extends InAppUpdatesBase {
       );
     }
 
-    if (!checkResponse.updateIsAvailable) {
+    let updateIsAvailable: boolean;
+
+    try {
+      updateIsAvailable =
+        compareVersions(checkResponse.version, appVersion) > 0;
+    } catch (err) {
+      return this.throwError(
+        `Couldn't compare store version "${checkResponse.version}" with current version "${appVersion}": ${err}`,
+        'startUpdate'
+      );
+    }
+
+    if (!updateIsAvailable) {
       this.debugLog(
         `Current version (${appVersion}) is already up to date with the store version (${checkResponse.version}); skipping prompt`
       );
