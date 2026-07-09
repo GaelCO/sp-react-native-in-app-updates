@@ -13,28 +13,21 @@ import {
   AndroidAvailabilityStatus,
   AndroidUpdateType,
   AndroidNeedsUpdateResponse,
+  AndroidOther,
 } from './types';
 import InAppUpdatesBase from './InAppUpdatesBase';
 import SpInAppUpdates from './NativeSpInAppUpdates';
-
-// Mirrors the constants exported by the native module (see
-// IN_APP_UPDATE_STATUS_KEY/IN_APP_UPDATE_RESULT_KEY in
-// SpReactNativeInAppUpdatesModule.java). Hardcoded here rather than read
-// off the native module's constants, since TurboModules don't expose
-// getConstants() output the same way the old bridge did.
-const IN_APP_UPDATE_STATUS_KEY = 'in_app_update_status';
-const IN_APP_UPDATE_RESULT_KEY = 'in_app_update_result';
 
 export default class InAppUpdates extends InAppUpdatesBase {
   constructor() {
     super();
     this.eventEmitter = new NativeEventEmitter(SpInAppUpdates);
     this.eventEmitter.addListener(
-      IN_APP_UPDATE_STATUS_KEY,
+      AndroidOther.IN_APP_UPDATE_STATUS_KEY,
       this.onIncomingNativeStatusUpdate
     );
     this.eventEmitter.addListener(
-      IN_APP_UPDATE_RESULT_KEY,
+      AndroidOther.IN_APP_UPDATE_RESULT_KEY,
       this.onIncomingNativeResult
     );
   }
