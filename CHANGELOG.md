@@ -3,9 +3,19 @@
 ### New Architecture (TurboModules) support on Android
 
 The Android native module now extends the codegen-generated TurboModule spec
-instead of `ReactContextBaseJavaModule` directly. This is backward
-compatible: the same module works unchanged on apps still using the old
-bridge architecture, no app-side changes are required.
+instead of `ReactContextBaseJavaModule` directly, and the module is now
+registered via a real `TurboReactPackage` (previously a plain `ReactPackage`,
+which only worked through RN's legacy interop layer). This same class works
+unchanged on apps still using the old bridge architecture, no app-side
+changes are required.
+
+`android/build.gradle` now applies the `com.facebook.react` Gradle plugin
+directly, which is what actually runs codegen and generates
+`NativeSpInAppUpdatesSpec` — previously it only applied `com.android.library`,
+so codegen never ran for this module and consumer builds would have failed
+with `cannot find symbol: class NativeSpInAppUpdatesSpec`. This makes RN
+**>= 0.71** (where that plugin ships) the effective minimum supported
+version, up from the previous unconstrained `react-native: "*"`.
 
 ### iOS defaults to the iTunes Search API instead of `react-native-siren`
 

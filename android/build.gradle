@@ -12,6 +12,11 @@ buildscript {
 }
 
 apply plugin: 'com.android.library'
+// Required for codegen: RNGP only wires up the generateCodegenArtifactsFromSchema task (which
+// produces NativeSpInAppUpdatesSpec) for projects that apply this plugin themselves - it isn't
+// generated on a consumer's behalf just from being autolinked. Makes RN >= 0.71 the effective
+// minimum, since that's the version this plugin ships from.
+apply plugin: 'com.facebook.react'
 
 def DEFAULT_CORE_APP_UPDATE_VERSION = "2.1.0"
 
