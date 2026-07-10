@@ -1,4 +1,4 @@
-import { NativeModules, NativeEventEmitter } from 'react-native';
+import { NativeEventEmitter } from 'react-native';
 import { getVersion } from 'react-native-device-info';
 
 import { compareVersions } from './utils';
@@ -13,25 +13,21 @@ import {
   AndroidAvailabilityStatus,
   AndroidUpdateType,
   AndroidNeedsUpdateResponse,
+  AndroidOther,
 } from './types';
 import InAppUpdatesBase from './InAppUpdatesBase';
-
-const { SpInAppUpdates } = NativeModules;
-const SpInAppUpdatesOrEmpty: {
-  IN_APP_UPDATE_STATUS_KEY: any;
-  IN_APP_UPDATE_RESULT_KEY: any;
-} = SpInAppUpdates || {};
+import SpInAppUpdates from './NativeSpInAppUpdates';
 
 export default class InAppUpdates extends InAppUpdatesBase {
   constructor() {
     super();
     this.eventEmitter = new NativeEventEmitter(SpInAppUpdates);
     this.eventEmitter.addListener(
-      SpInAppUpdatesOrEmpty?.IN_APP_UPDATE_STATUS_KEY,
+      AndroidOther.IN_APP_UPDATE_STATUS_KEY,
       this.onIncomingNativeStatusUpdate
     );
     this.eventEmitter.addListener(
-      SpInAppUpdatesOrEmpty?.IN_APP_UPDATE_RESULT_KEY,
+      AndroidOther.IN_APP_UPDATE_RESULT_KEY,
       this.onIncomingNativeResult
     );
   }
@@ -159,7 +155,7 @@ export default class InAppUpdates extends InAppUpdatesBase {
       })
       .catch((err: any) => {
         this.debugLog(err);
-        this.throwError(err, 'checkNeedsUpdate');
+        return this.throwError(err, 'checkNeedsUpdate');
       });
   };
 

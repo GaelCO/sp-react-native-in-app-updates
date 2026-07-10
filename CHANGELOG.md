@@ -1,3 +1,52 @@
+# 1.\*.\* -> 2.0.*
+
+### New Architecture (TurboModules) support on Android
+
+The Android native module now extends the codegen-generated TurboModule spec
+instead of `ReactContextBaseJavaModule` directly, and the module is now
+registered via a real `TurboReactPackage` (previously a plain `ReactPackage`,
+which only worked through RN's legacy interop layer). This same class works
+unchanged on apps still using the old bridge architecture, no app-side
+changes are required.
+
+`android/build.gradle` now applies the `com.facebook.react` Gradle plugin
+directly, which is what actually runs codegen and generates
+`NativeSpInAppUpdatesSpec` — previously it only applied `com.android.library`,
+so codegen never ran for this module and consumer builds would have failed
+with `cannot find symbol: class NativeSpInAppUpdatesSpec`. This makes RN
+**>= 0.71** (where that plugin ships) the effective minimum supported
+version, up from the previous unconstrained `react-native: "*"`.
+
+### iOS defaults to the iTunes Search API instead of `react-native-siren`
+
+`checkNeedsUpdate`/`startUpdate` on iOS no longer require `react-native-siren`
+by default — they call the iTunes Search API directly, with no extra native
+dependency. `react-native-siren` is now an optional peer dependency, still
+available via `iosStrategy: 'siren'` on `CheckOptions`/`StartUpdateOptions`
+for anyone who prefers it (install it separately if you use that option).
+
+`new SpInAppUpdates(isDebug)` and its method signatures are unchanged.
+
+### BREAKING (types only): `storeVersion`/`reason` are now optional on `NeedsUpdateResponseBase`
+
+Both platforms already omitted these fields from `checkNeedsUpdate`'s result in
+some success/failure branches; the types just didn't reflect that before. If
+you're on strict TypeScript and read `result.storeVersion`/`result.reason`
+without a null check (e.g. `semver.gt(result.storeVersion, ...)`), you'll need
+to add one when upgrading.
+
+### BREAKING (behavior): the Android native module is resolved at import time
+
+The module is now looked up via `TurboModuleRegistry.getEnforcing` when the
+library is imported — the standard TurboModule pattern — instead of the
+previous lenient `NativeModules.SpInAppUpdates || {}` fallback. In any Android
+JS environment where the native module isn't present (Expo Go, Jest without a
+mock, a binary that doesn't include the module), importing the library now
+throws immediately rather than failing on first use. Any Expo workflow that
+builds the native project works fine (dev builds, production/EAS builds,
+`expo prebuild`) — only Expo Go doesn't; and mock the module (or the whole
+library) in Jest.
+
 # 1.2.* -> 1.3.*
 
 ### Android: Changing how we import core play dependencies.

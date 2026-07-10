@@ -10,7 +10,9 @@
 
 This is a **react-native native module** that works on both **iOS** and **Android**, and checks the stores (play/app) for a new version of your app and can prompt your user for an update.
 
-It uses **embedded** [in-app-updates via Play-Core](https://developer.android.com/guide/playcore/in-app-updates) on Android (to check & download google play patches natively from within the app), and [react-native-siren](https://github.com/GantMan/react-native-siren) on iOS (to check & navigate the user to the AppStore).
+It uses **embedded** [in-app-updates via Play-Core](https://developer.android.com/guide/playcore/in-app-updates) on Android (to check & download google play patches natively from within the app), and the iTunes Search API on iOS by default (to check & navigate the user to the AppStore, with no extra native dependency). [react-native-siren](https://github.com/GantMan/react-native-siren) is still available on iOS as an opt-in via `iosStrategy: 'siren'` (see below) for anyone who prefers it — install it separately if you use that option.
+
+The Android module supports both the old bridge architecture and the **New Architecture** (TurboModules) — no extra setup needed either way.
 
 ### Why?
 Because to this day I'm not aware of any react-native libraries that use play core to offer embedded in-app-updates besides this one
@@ -52,6 +54,8 @@ Next, rebuild the native files using ```npx expo prebuild --clean && eas build -
 This project uses [`react-native-device-info`](https://github.com/react-native-device-info/react-native-device-info#installation) in the background. Install it to ensure everything works correctly.
 
 ### Expo:
+
+This library contains native code, so it works in any Expo app whose native project is actually built — [development builds](https://docs.expo.dev/develop/development-builds/introduction/), production/EAS builds, and `expo prebuild` workflows alike. The only thing it does **not** work in is **Expo Go**, whose prebuilt sandbox can't load third-party native modules. Since v2 the native module is resolved when the library is imported (the standard TurboModule pattern), so importing it inside Expo Go fails at startup rather than on first use.
 
 In order to make it work using **Expo** you need to replace react-native-device-info dependency.
 
@@ -154,6 +158,7 @@ Where:
 |  toSemverConverter | (optional) Function  |  This will run right after the store version is fetched in case you want to change it before it's compared as a semver |
 |  customVersionComparator | (optional) Function  | By default this library uses `semver` behind the scenes to compare the store version with the `curVersion` value, but you can pass your own version comparator if you want to |
 |  country (iOS only) | (optional) String  | default `undefined`, it will filter by country code while requesting an update, The value should be [ISO 3166-1 country code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements) |
+| iosStrategy (iOS only) | (optional) `'itunes' \| 'siren'` | Which strategy to use for checking for updates. `'itunes'` (default) calls the iTunes Search API directly, no extra dependency needed. `'siren'` delegates to `react-native-siren`, which must be installed separately. |
 
 and `NeedsUpdateResponse`:
 
@@ -184,6 +189,7 @@ Where:
 | bundleId (iOS only)               | (optional) String                                                                                                             | The id that identifies the app (ex: com.apple.mobilesafari). If undefined, it will be retrieved with react-native-device-info. (default: `undefined`)                                                                       |
 | country (iOS only)                | (optional) String                                                                                                             | If set, it will filter by country code while requesting an update, The value should be [ISO 3166-1 country code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements) (default: `undefined`) |
 | versionSpecificOptions (iOS only) | (optional) Array\<IosStartUpdateOptionWithLocalVersion>                                                                       | An array of IosStartUpdateOptionWithLocalVersion that specify rules dynamically based on what version the device is currently running. (default: `undefined`)                                                               |
+| iosStrategy (iOS only)            | (optional) `'itunes' \| 'siren'`                                                                                              | Which strategy to use for prompting for updates. `'itunes'` (default) shows the alert above using the iTunes Search API, no extra dependency needed. `'siren'` delegates to `react-native-siren`, which must be installed separately. |
 
 <br>
 
