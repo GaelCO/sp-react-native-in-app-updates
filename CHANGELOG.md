@@ -35,6 +35,18 @@ you're on strict TypeScript and read `result.storeVersion`/`result.reason`
 without a null check (e.g. `semver.gt(result.storeVersion, ...)`), you'll need
 to add one when upgrading.
 
+### BREAKING (behavior): the Android native module is resolved at import time
+
+The module is now looked up via `TurboModuleRegistry.getEnforcing` when the
+library is imported — the standard TurboModule pattern — instead of the
+previous lenient `NativeModules.SpInAppUpdates || {}` fallback. In any Android
+JS environment where the native module isn't present (Expo Go, Jest without a
+mock, a binary that doesn't include the module), importing the library now
+throws immediately rather than failing on first use. Any Expo workflow that
+builds the native project works fine (dev builds, production/EAS builds,
+`expo prebuild`) — only Expo Go doesn't; and mock the module (or the whole
+library) in Jest.
+
 # 1.2.* -> 1.3.*
 
 ### Android: Changing how we import core play dependencies.

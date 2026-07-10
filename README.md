@@ -55,6 +55,8 @@ This project uses [`react-native-device-info`](https://github.com/react-native-d
 
 ### Expo:
 
+This library contains native code, so it works in any Expo app whose native project is actually built — [development builds](https://docs.expo.dev/develop/development-builds/introduction/), production/EAS builds, and `expo prebuild` workflows alike. The only thing it does **not** work in is **Expo Go**, whose prebuilt sandbox can't load third-party native modules. Since v2 the native module is resolved when the library is imported (the standard TurboModule pattern), so importing it inside Expo Go fails at startup rather than on first use.
+
 In order to make it work using **Expo** you need to replace react-native-device-info dependency.
 
 1. Create `react-native-device-info.js` file in root with following content. Requires expo-constants dependency. If you target iOS then you also need to ensure you add a bundleIdentifier to the ios section of your expo config.
