@@ -82,6 +82,14 @@ export default class InAppUpdates extends InAppUpdatesBase {
             ? customVersionComparator(newAppV, appVersion)
             : compareVersions(newAppV, appVersion);
 
+          // The itunes strategy can't know updateIsAvailable until this
+          // comparison has run, so stamp the real result here; siren computes
+          // its own value, which is passed through untouched.
+          const other: IosPerformCheckResponse =
+            iosStrategy === 'siren'
+              ? { ...checkResponse }
+              : { ...checkResponse, updateIsAvailable: vCompRes > 0 };
+
           if (vCompRes > 0) {
             this.debugLog(
               `Compared cur version (${appVersion}) with store version (${newAppV}). The store version is higher!`
@@ -90,7 +98,7 @@ export default class InAppUpdates extends InAppUpdatesBase {
             return {
               shouldUpdate: true,
               storeVersion: newAppV,
-              other: { ...checkResponse },
+              other,
             };
           }
           this.debugLog(
@@ -102,7 +110,7 @@ export default class InAppUpdates extends InAppUpdatesBase {
             reason: `current version (${appVersion}) is already later than the latest store version (${newAppV}${
               toSemverConverter ? ` - originated from ${version}` : ''
             })`,
-            other: { ...checkResponse },
+            other,
           };
         }
         this.debugLog('Failed to fetch a store version');
@@ -127,11 +135,10 @@ export default class InAppUpdates extends InAppUpdatesBase {
     if (!entry) {
       return { updateIsAvailable: false } as IosPerformCheckResponse;
     }
-    // updateIsAvailable is a shape-parity placeholder here (matches the siren
-    // response shape); it isn't a real comparison. checkNeedsUpdate derives
-    // shouldUpdate itself from `version`, after applying its own semver
-    // conversion/comparator, and promptUserForUpdate does its own comparison
-    // below - neither should rely on a comparison done before that.
+    // updateIsAvailable can't be computed here: the comparison must run after
+    // the caller's toSemverConverter/customVersionComparator are applied.
+    // checkNeedsUpdate overwrites this with the real result, and
+    // promptUserForUpdate does its own comparison below.
     return { ...entry, updateIsAvailable: false };
   }
 
