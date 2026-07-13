@@ -1,4 +1,3 @@
-import _ from 'underscore';
 export default class EventListenerCollection {
   listenerCollection: Array<Function> = [];
 
@@ -13,16 +12,15 @@ export default class EventListenerCollection {
   }
 
   public addListener(callback: Function): void {
-    if (!_.contains(this.listenerCollection, callback)) {
+    if (!this.listenerCollection.includes(callback)) {
       this.listenerCollection.push(callback);
     }
   }
 
   public removeListener(callback: any) {
-    if (_.contains(this.listenerCollection, callback)) {
-      this.listenerCollection = _.reject(
-        this.listenerCollection,
-        (item: any) => item === callback
+    if (this.listenerCollection.includes(callback)) {
+      this.listenerCollection = this.listenerCollection.filter(
+        (item: any) => item !== callback
       );
     }
   }
